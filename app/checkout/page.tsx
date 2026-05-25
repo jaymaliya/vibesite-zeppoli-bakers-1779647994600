@@ -29,6 +29,7 @@ export default function CheckoutPage() {
   const [upiTxnId, setUpiTxnId] = useState("");
   const [confirming, setConfirming] = useState(false);
   const [showConfirmSection, setShowConfirmSection] = useState(false);
+  const [upiCopied, setUpiCopied] = useState('');
 
   const pollRef = useRef<NodeJS.Timeout | null>(null);
   const appClickTimeRef = useRef<number>(0);
@@ -132,11 +133,17 @@ export default function CheckoutPage() {
     }
   }
 
-  function openUPIApp(scheme: string) {
-    const params = payData.upiString.split("?")[1] || "";
-    appClickTimeRef.current = Date.now();
-    window.open(`${scheme}${params}`);
-    setTimeout(() => setShowConfirmSection(true), 12000);
+  async function copyToClipboard(text: string, type: string) {
+    try { await navigator.clipboard.writeText(text); } catch {
+      const el = document.createElement('input');
+      el.value = text;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+    }
+    setUpiCopied(type);
+    setTimeout(() => setUpiCopied(''), 2500);
   }
 
   const inputBase: React.CSSProperties = {
@@ -909,211 +916,90 @@ export default function CheckoutPage() {
                   ].map((item, i) => (
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                       {item.icon}
-                      <p style={{ fontSize: "13px", color: "var(--muted)", lineHeight: 1.4 }}>{item.text}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ===== UPI INTENT MODE MODAL ===== */}
+                      <p style={{ fontSize: "13px", color:/* ===== UPI INTENT MODE MODAL ===== */}
       {payData?.upiMode && !paid && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 1000,
-            background: "rgba(10,6,2,0.88)",
-            backdropFilter: "blur(6px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "24px",
-          }}
-        >
-          <div
-            style={{
-              background: "#1e1208",
-              border: "1.5px solid #3a2a1e",
-              borderRadius: "24px",
-              padding: "40px 36px",
-              maxWidth: "500px",
-              width: "100%",
-              boxShadow: "0 32px 80px rgba(140,28,30,0.3)",
-              position: "relative",
-            }}
-          >
-            {/* Brand header */}
-            <div style={{ textAlign: "center", marginBottom: "32px" }}>
-              <div style={{ padding: "4px 8px", borderRadius: "8px", background: "rgba(255,255,255,0.06)", display: "inline-block", marginBottom: "16px" }}>
-                <img src="/logo.png" alt="Zeppoli Bakers" style={{ height: "36px", objectFit: "contain" }} />
-              </div>
-              <p style={{ fontSize: "13px", color: "var(--muted)", marginBottom: "6px", fontFamily: "'Nunito Sans', sans-serif" }}>
-                Zeppoli Bakers
-              </p>
-              <p
-                style={{
-                  fontFamily: "'Cormorant Garamond', serif",
-                  fontSize: "2rem",
-                  fontWeight: 700,
-                  color: "var(--text)",
-                  letterSpacing: "-0.02em",
-                }}
-              >
+        <div style={{ position:"fixed",inset:0,zIndex:1000,background:"rgba(10,6,2,0.90)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",padding:"24px",overflowY:"auto" }}>
+          <div style={{ background:"#1e1208",border:"1.5px solid #3a2a1e",borderRadius:"24px",padding:"36px 28px",maxWidth:"440px",width:"100%",boxShadow:"0 32px 80px rgba(140,28,30,0.35)",fontFamily:"'Nunito Sans',sans-serif" }}>
+
+            {/* Brand + Amount */}
+            <div style={{ textAlign:"center",marginBottom:"20px" }}>
+              <img src="/logo.png" alt="Zeppoli Bakers" style={{ height:"30px",objectFit:"contain",marginBottom:"10px" }} />
+              <p style={{ fontFamily:"'Cormorant Garamond',serif",fontSize:"2rem",fontWeight:700,color:"var(--text)",letterSpacing:"-0.02em",margin:0 }}>
                 Pay ₹{payData.amount?.toLocaleString("en-IN")}
               </p>
+              <p style={{ fontSize:"13px",color:"var(--muted)",marginTop:"4px" }}>Send this exact amount via any UPI app</p>
+            </div>
+
+            {/* QR Code */}
+            <div style={{ textAlign:"center",marginBottom:"20px" }}>
+              <p style={{ fontSize:"11px",textTransform:"uppercase",letterSpacing:"0.12em",fontWeight:700,color:"var(--muted)",marginBottom:"10px" }}>
+                Scan with GPay / PhonePe / Paytm
+              </p>
+              <div style={{ background:"#fff",borderRadius:"14px",padding:"12px",display:"inline-block",boxShadow:"0 4px 20px rgba(140,28,30,0.2)" }}>
+                <img src={`data:image/png;base64,${payData.qrBase64}`} width={200} height={200} alt="UPI QR Code" style={{ display:"block" }} />
+              </div>
             </div>
 
             {/* Divider */}
-            <div style={{ height: "1px", background: "#2a1a10", marginBottom: "28px" }} />
+            <div style={{ display:"flex",alignItems:"center",gap:"12px",marginBottom:"16px" }}>
+              <div style={{ flex:1,height:"1px",background:"#2a1a10" }} />
+              <span style={{ fontSize:"11px",color:"var(--muted)",whiteSpace:"nowrap" }}>or copy UPI ID on mobile</span>
+              <div style={{ flex:1,height:"1px",background:"#2a1a10" }} />
+            </div>
 
-            {/* App buttons */}
-            <p style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 700, color: "var(--muted)", marginBottom: "16px", textAlign: "center" }}>
-              Choose your UPI app
-            </p>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
-              {[
-                {
-                  name: "Google Pay",
-                  scheme: "gpay://upi/pay?",
-                  color: "#1a7fee",
-                  icon: (
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                      <circle cx="12" cy="12" r="10" fill="#4285F4" />
-                      <text x="12" y="16" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">G</text>
-                    </svg>
-                  ),
-                },
-                {
-                  name: "PhonePe",
-                  scheme: "phonepe://pay?",
-                  color: "#5f259f",
-                  icon: (
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                      <rect width="24" height="24" rx="6" fill="#5f259f" />
-                      <text x="12" y="16" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">Pe</text>
-                    </svg>
-                  ),
-                },
-                {
-                  name: "Paytm",
-                  scheme: "paytm://pay?",
-                  color: "#00BAF2",
-                  icon: (
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                      <rect width="24" height="24" rx="6" fill="#00BAF2" />
-                      <text x="12" y="16" textAnchor="middle" fill="white" fontSize="7" fontWeight="bold">Py</text>
-                    </svg>
-                  ),
-                },
-                {
-                  name: "Any UPI App",
-                  scheme: null,
-                  color: "#673926",
-                  icon: (
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke="#F5EDE0" strokeWidth="1.5" />
-                      <path d="M7 11V7a5 5 0 0110 0v4" stroke="#F5EDE0" strokeWidth="1.5" strokeLinecap="round" />
-                    </svg>
-                  ),
-                },
-              ].map((app) => (
-                <button
-                  key={app.name}
-                  onClick={() => {
-                    if (app.scheme === null) {
-                      appClickTimeRef.current = Date.now();
-                      window.open(payData.upiString);
-                      setTimeout(() => setShowConfirmSection(true), 12000);
-                    } else {
-                      openUPIApp(app.scheme);
-                    }
-                  }}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "10px",
-                    padding: "14px 16px",
-                    borderRadius: "12px",
-                    border: "1.5px solid #3a2a1e",
-                    background: "#110D08",
-                    color: "var(--text)",
-                    fontFamily: "'Nunito Sans', sans-serif",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    transition: "border-color 200ms ease, transform 200ms ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = "#8C1C1E";
-                    e.currentTarget.style.transform = "scale(1.02)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = "#3a2a1e";
-                    e.currentTarget.style.transform = "scale(1)";
-                  }}
-                >
-                  {app.icon}
-                  {app.name}
+            {/* Copy UPI ID */}
+            <div style={{ marginBottom:"10px" }}>
+              <p style={{ fontSize:"11px",textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:700,color:"var(--muted)",marginBottom:"6px" }}>UPI ID</p>
+              <div style={{ display:"flex",gap:"8px",alignItems:"center" }}>
+                <div style={{ flex:1,padding:"11px 13px",background:"#110D08",border:"1.5px solid #3a2a1e",borderRadius:"10px",fontFamily:"monospace",fontSize:"14px",color:"var(--text)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                  {payData.upiId}
+                </div>
+                <button onClick={() => copyToClipboard(payData.upiId, 'upi')} style={{ padding:"11px 16px",borderRadius:"10px",border:"1.5px solid "+(upiCopied==='upi'?"#8C1C1E":"#3a2a1e"),background:upiCopied==='upi'?"rgba(140,28,30,0.2)":"#110D08",color:upiCopied==='upi'?"#ff8888":"var(--text)",fontFamily:"'Nunito Sans',sans-serif",fontSize:"13px",fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",transition:"all 200ms" }}>
+                  {upiCopied==='upi'?"Copied!":"Copy"}
                 </button>
+              </div>
+            </div>
+
+            {/* Copy Amount */}
+            <div style={{ marginBottom:"20px" }}>
+              <p style={{ fontSize:"11px",textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:700,color:"var(--muted)",marginBottom:"6px" }}>Amount</p>
+              <div style={{ display:"flex",gap:"8px",alignItems:"center" }}>
+                <div style={{ flex:1,padding:"11px 13px",background:"#110D08",border:"1.5px solid #3a2a1e",borderRadius:"10px",fontFamily:"monospace",fontSize:"14px",color:"var(--text)" }}>
+                  ₹{payData.amount?.toLocaleString("en-IN")}
+                </div>
+                <button onClick={() => copyToClipboard(String(payData.amount), 'amount')} style={{ padding:"11px 16px",borderRadius:"10px",border:"1.5px solid "+(upiCopied==='amount'?"#8C1C1E":"#3a2a1e"),background:upiCopied==='amount'?"rgba(140,28,30,0.2)":"#110D08",color:upiCopied==='amount'?"#ff8888":"var(--text)",fontFamily:"'Nunito Sans',sans-serif",fontSize:"13px",fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",transition:"all 200ms" }}>
+                  {upiCopied==='amount'?"Copied!":"Copy"}
+                </button>
+              </div>
+            </div>
+
+            {/* How-to steps */}
+            <div style={{ padding:"14px",background:"rgba(140,28,30,0.06)",borderRadius:"12px",border:"1px solid rgba(140,28,30,0.15)",marginBottom:"20px" }}>
+              <p style={{ fontSize:"11px",fontWeight:700,color:"var(--muted)",marginBottom:"10px",letterSpacing:"0.06em",textTransform:"uppercase" }}>How to pay on mobile</p>
+              {["Open GPay, PhonePe, or Paytm","Tap Pay > Enter UPI ID","Paste the UPI ID, enter the amount","Pay, then come back and confirm"].map((step, i) => (
+                <div key={i} style={{ display:"flex",alignItems:"flex-start",gap:"10px",marginBottom:i<3?"8px":0 }}>
+                  <div style={{ width:"20px",height:"20px",borderRadius:"50%",background:"rgba(140,28,30,0.5)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:"11px",fontWeight:700,color:"var(--text)" }}>{i+1}</div>
+                  <span style={{ fontSize:"13px",color:"var(--text)",lineHeight:1.5 }}>{step}</span>
+                </div>
               ))}
             </div>
 
             {/* Confirm section */}
-            {showConfirmSection && (
-              <div
-                style={{
-                  marginTop: "24px",
-                  padding: "20px",
-                  background: "rgba(140,28,30,0.1)",
-                  borderRadius: "14px",
-                  border: "1.5px solid rgba(140,28,30,0.3)",
-                }}
-              >
-                <p style={{ fontSize: "13px", fontWeight: 700, color: "var(--text)", marginBottom: "12px" }}>
-                  Paid? Enter UPI Transaction ID (optional):
-                </p>
-                <input
-                  type="text"
-                  value={upiTxnId}
-                  onChange={(e) => setUpiTxnId(e.target.value)}
-                  placeholder="e.g. 123456789012"
-                  style={{
-                    ...inputBase,
-                    marginBottom: "12px",
-                    fontSize: "14px",
-                  }}
-                />
-                <button
-                  onClick={handleConfirmOrder}
-                  disabled={confirming}
-                  style={{
-                    width: "100%",
-                    padding: "14px",
-                    borderRadius: "10px",
-                    border: "none",
-                    background: confirming ? "#4a2020" : "var(--primary)",
-                    color: "var(--text)",
-                    fontFamily: "'Nunito Sans', sans-serif",
-                    fontSize: "15px",
-                    fontWeight: 700,
-                    cursor: confirming ? "not-allowed" : "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "8px",
-                    boxShadow: confirming ? "none" : "0 6px 20px rgba(140,28,30,0.35)",
-                  }}
-                  onMouseEnter={(e) => { if (!confirming) e.currentTarget.style.transform = "scale(1.02)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
-                >
-                  {confirming ? (
-                    <>
-                      <div style={{ width: "16px", height: "16px", border: "2px solid rgba(245,237,224,0.3)", borderTop: "2px solid var(--text)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-                      Confirming…
+            <div>
+              <p style={{ fontSize:"13px",fontWeight:700,color:"var(--text)",marginBottom:"10px" }}>After paying, enter Transaction ID (optional):</p>
+              <input type="text" value={upiTxnId} onChange={(e) => setUpiTxnId(e.target.value)} placeholder="e.g. 123456789012"
+                style={{ width:"100%",padding:"12px 14px",borderRadius:"10px",border:"1.5px solid #3a2a1e",background:"#110D08",color:"var(--text)",fontFamily:"'Nunito Sans',sans-serif",fontSize:"14px",outline:"none",boxSizing:"border-box" as const,marginBottom:"12px" }}
+              />
+              <button onClick={handleConfirmOrder} disabled={confirming}
+                style={{ width:"100%",padding:"16px",borderRadius:"12px",border:"none",background:confirming?"#4a2020":"var(--primary)",color:"var(--text)",fontFamily:"'Nunito Sans',sans-serif",fontSize:"16px",fontWeight:700,cursor:confirming?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",boxShadow:confirming?"none":"0 6px 20px rgba(140,28,30,0.4)",letterSpacing:"0.02em" }}>
+                {confirming?(<><div style={{ width:"16px",height:"16px",border:"2px solid rgba(245,237,224,0.3)",borderTop:"2px solid var(--text)",borderRadius:"50%",animation:"spin 0.8s linear infinite" }}/> Confirming…</>):"I've Paid — Confirm Order"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {
                     </>
                   ) : (
                     "Confirm Order"
