@@ -28,7 +28,6 @@ export default function CheckoutPage() {
   const [paid, setPaid] = useState(false);
   const [upiTxnId, setUpiTxnId] = useState("");
   const [confirming, setConfirming] = useState(false);
-  const [showConfirmSection, setShowConfirmSection] = useState(false);
   const [paymentLaunched, setPaymentLaunched] = useState(false);
 
   const pollRef = useRef<NodeJS.Timeout | null>(null);
@@ -59,7 +58,7 @@ export default function CheckoutPage() {
       if (document.visibilityState === "visible") {
         const elapsed = Date.now() - appClickTimeRef.current;
         if (elapsed > 8000) {
-          setShowConfirmSection(true);
+          setPaymentLaunched(true);
         }
       }
     };
@@ -134,29 +133,21 @@ export default function CheckoutPage() {
   }
 
   async function payNow() {
-    // Try Web Payment Request API (Chrome Android) — classified as P2P, no bank limits
     if (typeof (window as any).PaymentRequest !== 'undefined') {
       try {
         const req = new (window as any).PaymentRequest(
-          [{
-            supportedMethods: 'https://tez.google.com/pay',
-            data: { pa: payData.upiId, tr: payData.orderId, am: String(payData.amount), cu: 'INR' }
-          }],
+          [{ supportedMethods: 'https://tez.google.com/pay', data: { pa: payData.upiId, tr: payData.orderId, am: String(payData.amount), cu: 'INR' } }],
           { total: { label: 'Total', amount: { currency: 'INR', value: String(payData.amount) } } }
         );
         const canPay = await req.canMakePayment();
-        if (canPay) {
-          const response = await req.show();
-          await response.complete('success');
-          setPaymentLaunched(true);
-          return;
-        }
-      } catch (_e) { /* fall through to upi:// */ }
+        if (canPay) { const resp = await req.show(); await resp.complete('success'); setPaymentLaunched(true); return; }
+      } catch (_e) {}
     }
-    // Fallback: universal UPI intent (system app chooser, not app-specific scheme)
     window.location.href = `upi://pay?pa=${encodeURIComponent(payData.upiId)}&am=${payData.amount}&cu=INR`;
     setTimeout(() => setPaymentLaunched(true), 4000);
   }
+
+  const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad/i.test(navigator.userAgent);
 
   const inputBase: React.CSSProperties = {
     width: "100%",
@@ -173,7 +164,6 @@ export default function CheckoutPage() {
   };
 
   const inputError: React.CSSProperties = { ...inputBase, borderColor: "#e05050" };
-  const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad/i.test(navigator.userAgent);
 
   if (paid && payData) {
     return (
@@ -929,65 +919,65 @@ export default function CheckoutPage() {
                   ].map((item, i) => (
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                       {item.icon}
-                      <p style={{ fontSize: "13px", color:/* ===== UPI INTENT MODE MODAL ===== */}
+                      <p style={{ fontSize: "13px", color: "var(--muted)", lineHeight: 1.4 }}>{item.text}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ===== UPI INTENT MODE MODAL ===== */}
       {payData?.upiMode && !paid && (
-        <div style={{ position:"fixed",inset:0,zIndex:1000,background:"rgba(10,6,2,0.92)",backdropFilter:"blur(10px)",display:"flex",alignItems:"center",justifyContent:"center",padding:"24px" }}>
+        <div style={{ position:"fixed",inset:0,zIndex:1000,background:"rgba(10,6,2,0.92)",backdropFilter:"blur(10px)",display:"flex",alignItems:"center",justifyContent:"center",padding:"24px",overflowY:"auto" }}>
           <div style={{ background:"#1e1208",border:"1.5px solid #3a2a1e",borderRadius:"24px",padding:"40px 32px",maxWidth:"400px",width:"100%",boxShadow:"0 32px 80px rgba(140,28,30,0.4)",fontFamily:"'Nunito Sans',sans-serif",textAlign:"center" }}>
 
-            {/* Brand */}
-            <img src="/logo.png" alt="Zeppoli Bakers" style={{ height:"28px",objectFit:"contain",marginBottom:"16px" }} />
+            <img src="/logo.png" alt="Zeppoli Bakers" style={{ height:"28px",objectFit:"contain",marginBottom:"14px" }} />
 
-            {/* Amount */}
-            <p style={{ fontFamily:"'Cormorant Garamond',serif",fontSize:"2.4rem",fontWeight:700,color:"var(--text)",letterSpacing:"-0.02em",margin:"0 0 4px" }}>
+            <p style={{ fontFamily:"'Cormorant Garamond',serif",fontSize:"2.2rem",fontWeight:700,color:"var(--text)",letterSpacing:"-0.02em",margin:"0 0 4px" }}>
               ₹{payData.amount?.toLocaleString("en-IN")}
             </p>
             <p style={{ fontSize:"13px",color:"var(--muted)",marginBottom:"28px" }}>Complete your Zeppoli Bakers order</p>
 
-            {/* ── MOBILE: one-tap Pay button ── */}
             {isMobile ? (
-              <div>
+              <div style={{ marginBottom:"20px" }}>
                 {!paymentLaunched ? (
                   <button
                     onClick={payNow}
-                    style={{ width:"100%",padding:"18px",borderRadius:"14px",border:"none",background:"linear-gradient(135deg,#8C1C1E,#673926)",color:"#F5EDE0",fontFamily:"'Nunito Sans',sans-serif",fontSize:"17px",fontWeight:800,cursor:"pointer",letterSpacing:"0.02em",boxShadow:"0 8px 28px rgba(140,28,30,0.5)",marginBottom:"16px",display:"flex",alignItems:"center",justifyContent:"center",gap:"10px" }}
+                    style={{ width:"100%",padding:"18px",borderRadius:"14px",border:"none",background:"linear-gradient(135deg,#8C1C1E,#673926)",color:"#F5EDE0",fontFamily:"'Nunito Sans',sans-serif",fontSize:"17px",fontWeight:800,cursor:"pointer",letterSpacing:"0.02em",boxShadow:"0 8px 28px rgba(140,28,30,0.5)",marginBottom:"10px" }}
                   >
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" fill="none"/><path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-8l8 5 8-5v8zm0-10l-8 5-8-5V6h16v2z" fill="#F5EDE0"/></svg>
                     Pay ₹{payData.amount?.toLocaleString("en-IN")} Now
                   </button>
                 ) : (
-                  <div style={{ padding:"16px",background:"rgba(140,28,30,0.12)",borderRadius:"12px",border:"1px solid rgba(140,28,30,0.3)",marginBottom:"16px" }}>
+                  <div style={{ padding:"14px",background:"rgba(140,28,30,0.12)",borderRadius:"12px",border:"1px solid rgba(140,28,30,0.3)",marginBottom:"10px" }}>
                     <p style={{ fontSize:"14px",fontWeight:700,color:"var(--text)",margin:"0 0 4px" }}>Payment app opened</p>
-                    <p style={{ fontSize:"12px",color:"var(--muted)",margin:0 }}>Complete payment in your UPI app, then confirm below</p>
+                    <p style={{ fontSize:"12px",color:"var(--muted)",margin:0 }}>Confirm payment there, then tap below</p>
                   </div>
                 )}
-                <p style={{ fontSize:"11px",color:"var(--muted)",marginBottom:"20px",lineHeight:1.5 }}>
-                  Opens Google Pay · PhonePe · Paytm — your choice
-                </p>
+                <p style={{ fontSize:"11px",color:"var(--muted)" }}>Opens Google Pay · PhonePe · Paytm</p>
               </div>
             ) : (
-              /* ── DESKTOP: QR code ── */
               <div style={{ marginBottom:"20px" }}>
-                <p style={{ fontSize:"11px",textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:700,color:"var(--muted)",marginBottom:"12px" }}>
+                <p style={{ fontSize:"11px",textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:700,color:"var(--muted)",marginBottom:"10px" }}>
                   Scan QR with any UPI app
                 </p>
-                <div style={{ background:"#fff",borderRadius:"14px",padding:"14px",display:"inline-block",boxShadow:"0 4px 20px rgba(140,28,30,0.2)",marginBottom:"8px" }}>
+                <div style={{ background:"#fff",borderRadius:"14px",padding:"12px",display:"inline-block",boxShadow:"0 4px 20px rgba(140,28,30,0.2)",marginBottom:"6px" }}>
                   <img src={`data:image/png;base64,${payData.qrBase64}`} width={200} height={200} alt="UPI QR Code" style={{ display:"block" }} />
                 </div>
-                <p style={{ fontSize:"11px",color:"var(--muted)" }}>Open GPay → Scan → Pay</p>
+                <p style={{ fontSize:"11px",color:"var(--muted)" }}>Open GPay / PhonePe / Paytm → Scan → Pay</p>
               </div>
             )}
 
-            {/* ── Confirm section (always visible after payment attempt) ── */}
             <div style={{ borderTop:"1px solid #2a1a10",paddingTop:"20px" }}>
-              <p style={{ fontSize:"12px",color:"var(--muted)",marginBottom:"10px" }}>
-                After paying, confirm your order:
-              </p>
+              <p style={{ fontSize:"12px",color:"var(--muted)",marginBottom:"10px",textAlign:"left" }}>After paying, confirm your order:</p>
               <input
                 type="text"
                 value={upiTxnId}
                 onChange={(e) => setUpiTxnId(e.target.value)}
                 placeholder="UPI Transaction ID (optional)"
-                style={{ width:"100%",padding:"12px 14px",borderRadius:"10px",border:"1.5px solid #3a2a1e",background:"#110D08",color:"var(--text)",fontFamily:"'Nunito Sans',sans-serif",fontSize:"14px",outline:"none",boxSizing:"border-box" as const,marginBottom:"10px" }}
+                style={{ width:"100%",padding:"12px 14px",borderRadius:"10px",border:"1.5px solid #3a2a1e",background:"#110D08",color:"var(--text)",fontFamily:"'Nunito Sans',sans-serif",fontSize:"14px",outline:"none",boxSizing:"border-box" as const,marginBottom:"10px",textAlign:"left" }}
               />
               <button
                 onClick={handleConfirmOrder}
@@ -1003,7 +993,7 @@ export default function CheckoutPage() {
         </div>
       )}
 
-      {/* ===== CASHFREE QR MODE MODAL ===== */}
+            {/* ===== CASHFREE QR MODE MODAL ===== */}
       {payData && !payData.upiMode && !paid && (
         <div
           style={{
