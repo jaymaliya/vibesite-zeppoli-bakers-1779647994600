@@ -173,6 +173,7 @@ export default function CheckoutPage() {
   };
 
   const inputError: React.CSSProperties = { ...inputBase, borderColor: "#e05050" };
+  const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad/i.test(navigator.userAgent);
 
   if (paid && payData) {
     return (
@@ -943,7 +944,7 @@ export default function CheckoutPage() {
             <p style={{ fontSize:"13px",color:"var(--muted)",marginBottom:"28px" }}>Complete your Zeppoli Bakers order</p>
 
             {/* ── MOBILE: one-tap Pay button ── */}
-            {/Android|iPhone|iPad/i.test(typeof navigator !== 'undefined' ? navigator.userAgent : '') ? (
+            {isMobile ? (
               <div>
                 {!paymentLaunched ? (
                   <button
