@@ -132,20 +132,7 @@ export default function CheckoutPage() {
     }
   }
 
-  async function payNow() {
-    if (typeof (window as any).PaymentRequest !== 'undefined') {
-      try {
-        const req = new (window as any).PaymentRequest(
-          [{ supportedMethods: 'https://tez.google.com/pay', data: { pa: payData.upiId, tr: payData.orderId, am: String(payData.amount), cu: 'INR' } }],
-          { total: { label: 'Total', amount: { currency: 'INR', value: String(payData.amount) } } }
-        );
-        const canPay = await req.canMakePayment();
-        if (canPay) { const resp = await req.show(); await resp.complete('success'); setPaymentLaunched(true); return; }
-      } catch (_e) {}
-    }
-    window.location.href = `upi://pay?pa=${encodeURIComponent(payData.upiId)}&am=${payData.amount}&cu=INR`;
-    setTimeout(() => setPaymentLaunched(true), 4000);
-  }
+
 
   const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad/i.test(navigator.userAgent);
 
@@ -322,6 +309,16 @@ export default function CheckoutPage() {
       </div>
     );
   }
+
+  function saveQR() {
+    const a = document.createElement('a');
+    a.href = `data:image/png;base64,${payData.qrBase64}`;
+    a.download = `pay-₹${payData.amount}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
 
   return (
     <>
@@ -931,69 +928,62 @@ export default function CheckoutPage() {
 
       {/* ===== UPI INTENT MODE MODAL ===== */}
       {payData?.upiMode && !paid && (
-        <div style={{ position:"fixed",inset:0,zIndex:1000,background:"rgba(10,6,2,0.92)",backdropFilter:"blur(10px)",display:"flex",alignItems:"center",justifyContent:"center",padding:"24px",overflowY:"auto" }}>
-          <div style={{ background:"#1e1208",border:"1.5px solid #3a2a1e",borderRadius:"24px",padding:"40px 32px",maxWidth:"400px",width:"100%",boxShadow:"0 32px 80px rgba(140,28,30,0.4)",fontFamily:"'Nunito Sans',sans-serif",textAlign:"center" }}>
+        <div style={{ position:"fixed",inset:0,zIndex:1000,background:"rgba(10,6,2,0.90)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",padding:"16px",overflowY:"auto" }}>
+          <div style={{ background:"#1e1208",border:"1.5px solid #3a2a1e",borderRadius:"24px",padding:"28px 20px",maxWidth:"420px",width:"100%",boxShadow:"0 32px 80px rgba(140,28,30,0.35)",fontFamily:"'Nunito Sans',sans-serif" }}>
 
-            <img src="/logo.png" alt="Zeppoli Bakers" style={{ height:"28px",objectFit:"contain",marginBottom:"14px" }} />
+            {/* Brand + Amount */}
+            <div style={{ textAlign:"center",marginBottom:"16px" }}>
+              <img src="/logo.png" alt="Zeppoli Bakers" style={{ height:"28px",objectFit:"contain",marginBottom:"8px" }} />
+              <p style={{ fontFamily:"'Cormorant Garamond',serif",fontSize:"2rem",fontWeight:700,color:"var(--text)",letterSpacing:"-0.02em",margin:0 }}>
+                Pay ₹{payData.amount?.toLocaleString("en-IN")}
+              </p>
+            </div>
 
-            <p style={{ fontFamily:"'Cormorant Garamond',serif",fontSize:"2.2rem",fontWeight:700,color:"var(--text)",letterSpacing:"-0.02em",margin:"0 0 4px" }}>
-              ₹{payData.amount?.toLocaleString("en-IN")}
-            </p>
-            <p style={{ fontSize:"13px",color:"var(--muted)",marginBottom:"28px" }}>Complete your Zeppoli Bakers order</p>
+            {/* QR Code — shown on ALL devices */}
+            <div style={{ textAlign:"center",marginBottom:"16px" }}>
+              <p style={{ fontSize:"11px",textTransform:"uppercase",letterSpacing:"0.12em",fontWeight:700,color:"var(--muted)",marginBottom:"8px" }}>
+                Scan with GPay / PhonePe / Paytm
+              </p>
+              <div style={{ background:"#fff",borderRadius:"14px",padding:"12px",display:"inline-block",boxShadow:"0 4px 20px rgba(140,28,30,0.2)",marginBottom:"12px" }}>
+                <img src={`data:image/png;base64,${payData.qrBase64}`} width={200} height={200} alt="UPI QR Code" style={{ display:"block" }} />
+              </div>
 
-            {isMobile ? (
-              <div style={{ marginBottom:"20px" }}>
-                {!paymentLaunched ? (
-                  <button
-                    onClick={payNow}
-                    style={{ width:"100%",padding:"18px",borderRadius:"14px",border:"none",background:"linear-gradient(135deg,#8C1C1E,#673926)",color:"#F5EDE0",fontFamily:"'Nunito Sans',sans-serif",fontSize:"17px",fontWeight:800,cursor:"pointer",letterSpacing:"0.02em",boxShadow:"0 8px 28px rgba(140,28,30,0.5)",marginBottom:"10px" }}
-                  >
-                    Pay ₹{payData.amount?.toLocaleString("en-IN")} Now
+              {/* Save QR button — mobile only */}
+              {isMobile && (
+                <div>
+                  <button onClick={saveQR}
+                    style={{ padding:"12px 24px",borderRadius:"12px",border:"1.5px solid #8C1C1E",background:"rgba(140,28,30,0.15)",color:"var(--text)",fontFamily:"'Nunito Sans',sans-serif",fontSize:"14px",fontWeight:700,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:"8px",marginBottom:"12px" }}>
+                    ⬇ Save QR to Phone
                   </button>
-                ) : (
-                  <div style={{ padding:"14px",background:"rgba(140,28,30,0.12)",borderRadius:"12px",border:"1px solid rgba(140,28,30,0.3)",marginBottom:"10px" }}>
-                    <p style={{ fontSize:"14px",fontWeight:700,color:"var(--text)",margin:"0 0 4px" }}>Payment app opened</p>
-                    <p style={{ fontSize:"12px",color:"var(--muted)",margin:0 }}>Confirm payment there, then tap below</p>
+                  <div style={{ padding:"12px",background:"rgba(140,28,30,0.06)",borderRadius:"10px",border:"1px solid rgba(140,28,30,0.15)",textAlign:"left" }}>
+                    <p style={{ fontSize:"11px",fontWeight:700,color:"var(--muted)",marginBottom:"8px",letterSpacing:"0.06em",textTransform:"uppercase" }}>How to pay on mobile</p>
+                    {["Tap “Save QR to Phone” above","Open GPay / PhonePe / Paytm","Tap “Scan” → “From Photos / Gallery”","Select the saved QR image → Pay"].map((step, i) => (
+                      <div key={i} style={{ display:"flex",alignItems:"flex-start",gap:"8px",marginBottom:i<3?"6px":0 }}>
+                        <div style={{ width:"18px",height:"18px",borderRadius:"50%",background:"rgba(140,28,30,0.5)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:"10px",fontWeight:700,color:"var(--text)" }}>{i+1}</div>
+                        <span style={{ fontSize:"12px",color:"var(--text)",lineHeight:1.5 }}>{step}</span>
+                      </div>
+                    ))}
                   </div>
-                )}
-                <p style={{ fontSize:"11px",color:"var(--muted)" }}>Opens Google Pay · PhonePe · Paytm</p>
-              </div>
-            ) : (
-              <div style={{ marginBottom:"20px" }}>
-                <p style={{ fontSize:"11px",textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:700,color:"var(--muted)",marginBottom:"10px" }}>
-                  Scan QR with any UPI app
-                </p>
-                <div style={{ background:"#fff",borderRadius:"14px",padding:"12px",display:"inline-block",boxShadow:"0 4px 20px rgba(140,28,30,0.2)",marginBottom:"6px" }}>
-                  <img src={`data:image/png;base64,${payData.qrBase64}`} width={200} height={200} alt="UPI QR Code" style={{ display:"block" }} />
                 </div>
-                <p style={{ fontSize:"11px",color:"var(--muted)" }}>Open GPay / PhonePe / Paytm → Scan → Pay</p>
-              </div>
-            )}
+              )}
+            </div>
 
-            <div style={{ borderTop:"1px solid #2a1a10",paddingTop:"20px" }}>
-              <p style={{ fontSize:"12px",color:"var(--muted)",marginBottom:"10px",textAlign:"left" }}>After paying, confirm your order:</p>
-              <input
-                type="text"
-                value={upiTxnId}
-                onChange={(e) => setUpiTxnId(e.target.value)}
-                placeholder="UPI Transaction ID (optional)"
-                style={{ width:"100%",padding:"12px 14px",borderRadius:"10px",border:"1.5px solid #3a2a1e",background:"#110D08",color:"var(--text)",fontFamily:"'Nunito Sans',sans-serif",fontSize:"14px",outline:"none",boxSizing:"border-box" as const,marginBottom:"10px",textAlign:"left" }}
+            {/* Confirm section — always visible */}
+            <div>
+              <p style={{ fontSize:"13px",fontWeight:700,color:"var(--text)",marginBottom:"8px" }}>After paying, enter Transaction ID (optional):</p>
+              <input type="text" value={upiTxnId} onChange={(e) => setUpiTxnId(e.target.value)} placeholder="e.g. 123456789012"
+                style={{ width:"100%",padding:"11px 14px",borderRadius:"10px",border:"1.5px solid #3a2a1e",background:"#110D08",color:"var(--text)",fontFamily:"'Nunito Sans',sans-serif",fontSize:"14px",outline:"none",boxSizing:"border-box",marginBottom:"10px" }}
               />
-              <button
-                onClick={handleConfirmOrder}
-                disabled={confirming}
-                style={{ width:"100%",padding:"15px",borderRadius:"12px",border:"none",background:confirming?"#4a2020":"var(--primary)",color:"var(--text)",fontFamily:"'Nunito Sans',sans-serif",fontSize:"15px",fontWeight:700,cursor:confirming?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",boxShadow:confirming?"none":"0 6px 20px rgba(140,28,30,0.4)" }}
-              >
-                {confirming ? (
-                  <><div style={{ width:"15px",height:"15px",border:"2px solid rgba(245,237,224,0.3)",borderTop:"2px solid var(--text)",borderRadius:"50%",animation:"spin 0.8s linear infinite" }} />Confirming…</>
-                ) : "I've Paid — Confirm Order"}
+              <button onClick={handleConfirmOrder} disabled={confirming}
+                style={{ width:"100%",padding:"15px",borderRadius:"12px",border:"none",background:confirming?"#4a2020":"var(--primary)",color:"var(--text)",fontFamily:"'Nunito Sans',sans-serif",fontSize:"16px",fontWeight:700,cursor:confirming?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",boxShadow:confirming?"none":"0 6px 20px rgba(140,28,30,0.4)",letterSpacing:"0.02em" }}>
+                {confirming?(<><div style={{ width:"16px",height:"16px",border:"2px solid rgba(245,237,224,0.3)",borderTop:"2px solid var(--text)",borderRadius:"50%",animation:"spin 0.8s linear infinite" }}/> Confirming…</>):"I've Paid — Confirm Order"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-            {/* ===== CASHFREE QR MODE MODAL ===== */}
+      {{/* ===== CASHFREE QR MODE MODAL ===== */}
       {payData && !payData.upiMode && !paid && (
         <div
           style={{
