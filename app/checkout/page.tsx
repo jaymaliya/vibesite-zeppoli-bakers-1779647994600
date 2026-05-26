@@ -310,13 +310,22 @@ export default function CheckoutPage() {
     );
   }
 
+
   function saveQR() {
     const a = document.createElement('a');
     a.href = `data:image/png;base64,${payData.qrBase64}`;
-    a.download = `pay-₹${payData.amount}.png`;
+    a.download = `pay-${payData.amount}.png`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+  }
+
+  function payDirect(pkg: string) {
+    const pa = encodeURIComponent(payData.upiId);
+    const am = encodeURIComponent(String(payData.amount));
+    // intent:// routes through Android OS native intent system — not browser web-payment context
+    // mode=00 signals QR-originated payment (P2P classification)
+    window.location.href = `intent://pay?pa=${pa}&am=${am}&cu=INR&mode=00#Intent;scheme=upi;package=${pkg};S.browser_fallback_url=about%3Ablank;end`;
   }
 
 
@@ -939,40 +948,55 @@ export default function CheckoutPage() {
               </p>
             </div>
 
-            {/* QR Code — shown on ALL devices */}
-            <div style={{ textAlign:"center",marginBottom:"16px" }}>
-              <p style={{ fontSize:"11px",textTransform:"uppercase",letterSpacing:"0.12em",fontWeight:700,color:"var(--muted)",marginBottom:"8px" }}>
-                Scan with GPay / PhonePe / Paytm
-              </p>
-              <div style={{ background:"#fff",borderRadius:"14px",padding:"12px",display:"inline-block",boxShadow:"0 4px 20px rgba(140,28,30,0.2)",marginBottom:"12px" }}>
-                <img src={`data:image/png;base64,${payData.qrBase64}`} width={200} height={200} alt="UPI QR Code" style={{ display:"block" }} />
+            {/* MOBILE: Direct pay buttons (intent://) */}
+            {isMobile && (
+              <div style={{ marginBottom:"16px" }}>
+                <p style={{ fontSize:"11px",textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:700,color:"var(--muted)",marginBottom:"10px",textAlign:"center" }}>Pay directly with your UPI app</p>
+                <div style={{ display:"flex",flexDirection:"column",gap:"10px" }}>
+                  <button onClick={() => payDirect('com.google.android.apps.npe')}
+                    style={{ padding:"14px",borderRadius:"12px",border:"1.5px solid #4CAF50",background:"rgba(76,175,80,0.12)",color:"#4CAF50",fontFamily:"'Nunito Sans',sans-serif",fontSize:"15px",fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"10px",letterSpacing:"0.01em" }}>
+                    <span style={{ fontSize:"20px" }}>G</span> Pay ₹{payData.amount?.toLocaleString("en-IN")} with GPay
+                  </button>
+                  <button onClick={() => payDirect('com.phonepe.app')}
+                    style={{ padding:"14px",borderRadius:"12px",border:"1.5px solid #5f259f",background:"rgba(95,37,159,0.12)",color:"#c084fc",fontFamily:"'Nunito Sans',sans-serif",fontSize:"15px",fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"10px",letterSpacing:"0.01em" }}>
+                    <span style={{ fontSize:"18px" }}>₱</span> Pay with PhonePe
+                  </button>
+                  <button onClick={() => payDirect('net.one97.paytm')}
+                    style={{ padding:"14px",borderRadius:"12px",border:"1.5px solid #00BAF2",background:"rgba(0,186,242,0.1)",color:"#00BAF2",fontFamily:"'Nunito Sans',sans-serif",fontSize:"15px",fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"10px",letterSpacing:"0.01em" }}>
+                    <span style={{ fontSize:"18px" }}>P</span> Pay with Paytm
+                  </button>
+                </div>
               </div>
+            )}
 
-              {/* Save QR button — mobile only */}
+            {/* Divider */}
+            <div style={{ display:"flex",alignItems:"center",gap:"10px",marginBottom:"14px" }}>
+              <div style={{ flex:1,height:"1px",background:"#2a1a10" }} />
+              <span style={{ fontSize:"11px",color:"var(--muted)",whiteSpace:"nowrap" }}>{isMobile ? "or scan QR code" : "Scan with any UPI app"}</span>
+              <div style={{ flex:1,height:"1px",background:"#2a1a10" }} />
+            </div>
+
+            {/* QR Code — shown on ALL devices */}
+            <div style={{ textAlign:"center",marginBottom:"14px" }}>
+              <div style={{ background:"#fff",borderRadius:"12px",padding:"10px",display:"inline-block",boxShadow:"0 4px 20px rgba(140,28,30,0.2)",marginBottom:"10px" }}>
+                <img src={`data:image/png;base64,${payData.qrBase64}`} width={180} height={180} alt="UPI QR Code" style={{ display:"block" }} />
+              </div>
               {isMobile && (
                 <div>
                   <button onClick={saveQR}
-                    style={{ padding:"12px 24px",borderRadius:"12px",border:"1.5px solid #8C1C1E",background:"rgba(140,28,30,0.15)",color:"var(--text)",fontFamily:"'Nunito Sans',sans-serif",fontSize:"14px",fontWeight:700,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:"8px",marginBottom:"12px" }}>
+                    style={{ padding:"10px 20px",borderRadius:"10px",border:"1.5px solid #3a2a1e",background:"#110D08",color:"var(--muted)",fontFamily:"'Nunito Sans',sans-serif",fontSize:"13px",fontWeight:600,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:"6px" }}>
                     ⬇ Save QR to Phone
                   </button>
-                  <div style={{ padding:"12px",background:"rgba(140,28,30,0.06)",borderRadius:"10px",border:"1px solid rgba(140,28,30,0.15)",textAlign:"left" }}>
-                    <p style={{ fontSize:"11px",fontWeight:700,color:"var(--muted)",marginBottom:"8px",letterSpacing:"0.06em",textTransform:"uppercase" }}>How to pay on mobile</p>
-                    {["Tap “Save QR to Phone” above","Open GPay / PhonePe / Paytm","Tap “Scan” → “From Photos / Gallery”","Select the saved QR image → Pay"].map((step, i) => (
-                      <div key={i} style={{ display:"flex",alignItems:"flex-start",gap:"8px",marginBottom:i<3?"6px":0 }}>
-                        <div style={{ width:"18px",height:"18px",borderRadius:"50%",background:"rgba(140,28,30,0.5)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:"10px",fontWeight:700,color:"var(--text)" }}>{i+1}</div>
-                        <span style={{ fontSize:"12px",color:"var(--text)",lineHeight:1.5 }}>{step}</span>
-                      </div>
-                    ))}
-                  </div>
+                  <p style={{ fontSize:"11px",color:"var(--muted)",marginTop:"6px" }}>Save → Open GPay → Scan → From Photos</p>
                 </div>
               )}
             </div>
 
-            {/* Confirm section — always visible */}
+            {/* Confirm section */}
             <div>
               <p style={{ fontSize:"13px",fontWeight:700,color:"var(--text)",marginBottom:"8px" }}>After paying, enter Transaction ID (optional):</p>
               <input type="text" value={upiTxnId} onChange={(e) => setUpiTxnId(e.target.value)} placeholder="e.g. 123456789012"
-                style={{ width:"100%",padding:"11px 14px",borderRadius:"10px",border:"1.5px solid #3a2a1e",background:"#110D08",color:"var(--text)",fontFamily:"'Nunito Sans',sans-serif",fontSize:"14px",outline:"none",boxSizing:"border-box",marginBottom:"10px" }}
+                style={{ width:"100%",padding:"11px 14px",borderRadius:"10px",border:"1.5px solid #3a2a1e",background:"#110D08",color:"var(--text)",fontFamily:"'Nunito Sans',sans-serif",fontSize:"14px",outline:"none",boxSizing:"border-box" as const,marginBottom:"10px" }}
               />
               <button onClick={handleConfirmOrder} disabled={confirming}
                 style={{ width:"100%",padding:"15px",borderRadius:"12px",border:"none",background:confirming?"#4a2020":"var(--primary)",color:"var(--text)",fontFamily:"'Nunito Sans',sans-serif",fontSize:"16px",fontWeight:700,cursor:confirming?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",boxShadow:confirming?"none":"0 6px 20px rgba(140,28,30,0.4)",letterSpacing:"0.02em" }}>
