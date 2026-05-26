@@ -133,7 +133,6 @@ export default function CheckoutPage() {
   }
 
 
-
   const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad/i.test(navigator.userAgent);
 
   const inputBase: React.CSSProperties = {
@@ -310,11 +309,10 @@ export default function CheckoutPage() {
     );
   }
 
-
   function saveQR() {
     const a = document.createElement('a');
-    a.href = `data:image/png;base64,${payData.qrBase64}`;
-    a.download = `pay-${payData.amount}.png`;
+    a.href = "data:image/png;base64," + payData.qrBase64;
+    a.download = "pay-" + payData.amount + ".png";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -323,9 +321,7 @@ export default function CheckoutPage() {
   function payDirect(pkg: string) {
     const pa = encodeURIComponent(payData.upiId);
     const am = encodeURIComponent(String(payData.amount));
-    // intent:// routes through Android OS native intent system — not browser web-payment context
-    // mode=00 signals QR-originated payment (P2P classification)
-    window.location.href = `intent://pay?pa=${pa}&am=${am}&cu=INR&mode=00#Intent;scheme=upi;package=${pkg};S.browser_fallback_url=about%3Ablank;end`;
+    window.location.href = "intent://pay?pa=" + pa + "&am=" + am + "&cu=INR&mode=00#Intent;scheme=upi;package=" + pkg + ";S.browser_fallback_url=about%3Ablank;end";
   }
 
 
@@ -944,26 +940,26 @@ export default function CheckoutPage() {
             <div style={{ textAlign:"center",marginBottom:"16px" }}>
               <img src="/logo.png" alt="Zeppoli Bakers" style={{ height:"28px",objectFit:"contain",marginBottom:"8px" }} />
               <p style={{ fontFamily:"'Cormorant Garamond',serif",fontSize:"2rem",fontWeight:700,color:"var(--text)",letterSpacing:"-0.02em",margin:0 }}>
-                Pay ₹{payData.amount?.toLocaleString("en-IN")}
+                Pay &#8377;{payData.amount?.toLocaleString("en-IN")}
               </p>
             </div>
 
-            {/* MOBILE: Direct pay buttons (intent://) */}
+            {/* MOBILE: Direct pay buttons using Android intent */}
             {isMobile && (
               <div style={{ marginBottom:"16px" }}>
-                <p style={{ fontSize:"11px",textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:700,color:"var(--muted)",marginBottom:"10px",textAlign:"center" }}>Pay directly with your UPI app</p>
+                <p style={{ fontSize:"11px",textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:700,color:"var(--muted)",marginBottom:"10px",textAlign:"center" }}>Tap to open your UPI app</p>
                 <div style={{ display:"flex",flexDirection:"column",gap:"10px" }}>
-                  <button onClick={() => payDirect('com.google.android.apps.npe')}
-                    style={{ padding:"14px",borderRadius:"12px",border:"1.5px solid #4CAF50",background:"rgba(76,175,80,0.12)",color:"#4CAF50",fontFamily:"'Nunito Sans',sans-serif",fontSize:"15px",fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"10px",letterSpacing:"0.01em" }}>
-                    <span style={{ fontSize:"20px" }}>G</span> Pay ₹{payData.amount?.toLocaleString("en-IN")} with GPay
+                  <button onClick={() => payDirect("com.google.android.apps.npe")}
+                    style={{ padding:"14px",borderRadius:"12px",border:"1.5px solid #4CAF50",background:"rgba(76,175,80,0.12)",color:"#4CAF50",fontFamily:"'Nunito Sans',sans-serif",fontSize:"15px",fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"10px" }}>
+                    Pay with GPay
                   </button>
-                  <button onClick={() => payDirect('com.phonepe.app')}
-                    style={{ padding:"14px",borderRadius:"12px",border:"1.5px solid #5f259f",background:"rgba(95,37,159,0.12)",color:"#c084fc",fontFamily:"'Nunito Sans',sans-serif",fontSize:"15px",fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"10px",letterSpacing:"0.01em" }}>
-                    <span style={{ fontSize:"18px" }}>₱</span> Pay with PhonePe
+                  <button onClick={() => payDirect("com.phonepe.app")}
+                    style={{ padding:"14px",borderRadius:"12px",border:"1.5px solid #5f259f",background:"rgba(95,37,159,0.12)",color:"#c084fc",fontFamily:"'Nunito Sans',sans-serif",fontSize:"15px",fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"10px" }}>
+                    Pay with PhonePe
                   </button>
-                  <button onClick={() => payDirect('net.one97.paytm')}
-                    style={{ padding:"14px",borderRadius:"12px",border:"1.5px solid #00BAF2",background:"rgba(0,186,242,0.1)",color:"#00BAF2",fontFamily:"'Nunito Sans',sans-serif",fontSize:"15px",fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"10px",letterSpacing:"0.01em" }}>
-                    <span style={{ fontSize:"18px" }}>P</span> Pay with Paytm
+                  <button onClick={() => payDirect("net.one97.paytm")}
+                    style={{ padding:"14px",borderRadius:"12px",border:"1.5px solid #00BAF2",background:"rgba(0,186,242,0.1)",color:"#00BAF2",fontFamily:"'Nunito Sans',sans-serif",fontSize:"15px",fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"10px" }}>
+                    Pay with Paytm
                   </button>
                 </div>
               </div>
@@ -972,22 +968,22 @@ export default function CheckoutPage() {
             {/* Divider */}
             <div style={{ display:"flex",alignItems:"center",gap:"10px",marginBottom:"14px" }}>
               <div style={{ flex:1,height:"1px",background:"#2a1a10" }} />
-              <span style={{ fontSize:"11px",color:"var(--muted)",whiteSpace:"nowrap" }}>{isMobile ? "or scan QR code" : "Scan with any UPI app"}</span>
+              <span style={{ fontSize:"11px",color:"var(--muted)",whiteSpace:"nowrap" }}>{isMobile ? "or scan QR code instead" : "Scan QR with any UPI app"}</span>
               <div style={{ flex:1,height:"1px",background:"#2a1a10" }} />
             </div>
 
-            {/* QR Code — shown on ALL devices */}
+            {/* QR Code */}
             <div style={{ textAlign:"center",marginBottom:"14px" }}>
               <div style={{ background:"#fff",borderRadius:"12px",padding:"10px",display:"inline-block",boxShadow:"0 4px 20px rgba(140,28,30,0.2)",marginBottom:"10px" }}>
-                <img src={`data:image/png;base64,${payData.qrBase64}`} width={180} height={180} alt="UPI QR Code" style={{ display:"block" }} />
+                <img src={"data:image/png;base64," + payData.qrBase64} width={180} height={180} alt="UPI QR Code" style={{ display:"block" }} />
               </div>
               {isMobile && (
                 <div>
                   <button onClick={saveQR}
                     style={{ padding:"10px 20px",borderRadius:"10px",border:"1.5px solid #3a2a1e",background:"#110D08",color:"var(--muted)",fontFamily:"'Nunito Sans',sans-serif",fontSize:"13px",fontWeight:600,cursor:"pointer",display:"inline-flex",alignItems:"center",gap:"6px" }}>
-                    ⬇ Save QR to Phone
+                    Save QR to Phone
                   </button>
-                  <p style={{ fontSize:"11px",color:"var(--muted)",marginTop:"6px" }}>Save → Open GPay → Scan → From Photos</p>
+                  <p style={{ fontSize:"11px",color:"var(--muted)",marginTop:"6px" }}>Save it, open GPay, tap Scan, pick From Photos</p>
                 </div>
               )}
             </div>
@@ -1000,14 +996,14 @@ export default function CheckoutPage() {
               />
               <button onClick={handleConfirmOrder} disabled={confirming}
                 style={{ width:"100%",padding:"15px",borderRadius:"12px",border:"none",background:confirming?"#4a2020":"var(--primary)",color:"var(--text)",fontFamily:"'Nunito Sans',sans-serif",fontSize:"16px",fontWeight:700,cursor:confirming?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",boxShadow:confirming?"none":"0 6px 20px rgba(140,28,30,0.4)",letterSpacing:"0.02em" }}>
-                {confirming?(<><div style={{ width:"16px",height:"16px",border:"2px solid rgba(245,237,224,0.3)",borderTop:"2px solid var(--text)",borderRadius:"50%",animation:"spin 0.8s linear infinite" }}/> Confirming…</>):"I've Paid — Confirm Order"}
+                {confirming?(<><div style={{ width:"16px",height:"16px",border:"2px solid rgba(245,237,224,0.3)",borderTop:"2px solid var(--text)",borderRadius:"50%",animation:"spin 0.8s linear infinite" }}/> Confirming...</>):"I've Paid - Confirm Order"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {{/* ===== CASHFREE QR MODE MODAL ===== */}
+      {/* ===== CASHFREE QR MODE MODAL ===== */}
       {payData && !payData.upiMode && !paid && (
         <div
           style={{
